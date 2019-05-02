@@ -37,7 +37,7 @@ osdsdock: prebuild
 	go build -o $(BUILD_DIR)/bin/osdsdock github.com/opensds/opensds/cmd/osdsdock
 
 osdslet: prebuild
-	go build -o $(BUILD_DIR)/bin/osdslet github.com/opensds/opensds/cmd/osdslet
+	go build -gcflags "all=-N -l" -o $(BUILD_DIR)/bin/osdslet github.com/opensds/opensds/cmd/osdslet
 
 osdsapiserver: prebuild
 	go build -gcflags "all=-N -l" -o $(BUILD_DIR)/bin/osdsapiserver github.com/opensds/opensds/cmd/osdsapiserver

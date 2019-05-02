@@ -58,8 +58,9 @@ type InstantMetricReponseFromPrometheus struct {
 type Metric struct {
 	Name     string `json:"__name__"`
 	Device   string `json:"device"`
-	Instance string `json:"instance"`
+	InstanceID string `json:"instanceID"`
 	Job      string `json:"job"`
+	Source      string `json:"source"`
 }
 type Result struct {
 	Metric Metric        `json:"metric"`
@@ -96,7 +97,8 @@ type RangeData struct {
 
 func (c *controller) GetLatestMetrics(opt *pb.GetMetricsOpts) (*[]model.MetricSpec, error) {
 
-	var metrics []model.MetricSpec
+	//var metrics []model.MetricSpec
+
 	// make a call to Prometheus, convert the response to our format, return
 	response, err := http.Get("http://localhost:9090/api/v1/query?query=" + opt.MetricName)
 	if err != nil {
@@ -114,20 +116,38 @@ func (c *controller) GetLatestMetrics(opt *pb.GetMetricsOpts) (*[]model.MetricSp
 
 		// now convert to our repsonse struct, so we can marshal it and send out the JSON
 		for i, res := range fv.Data.Result {
-			metrics[i].InstanceID = res.Metric.Instance + res.Metric.Device
+			metrics[i].InstanceID = res.Metric.InstanceID
+			metrics[i].Source=res.Metric.Source
 			metrics[i].Name = res.Metric.Name
-			metrics[i].MetricValues = make([]*model.Metric, len(res.Value))
-			for j, v := range res.Value {
+			metrics[i].InstanceName=res.Metric.Device
+			//metrics[i].MetricValues = make([]*model.Metric, len(res.Value))
+			metricValues := make([]*model.Metric, 0)
+			//mericValues = append(metricValues, metricValue)
+			metricValue := &model.Metric{
+
+			}
+			for _, v := range res.Value {
+
 				switch v.(type) {
 				case string:
-					metrics[i].MetricValues[j].Value, _ = strconv.ParseFloat(v.(string), 64)
+					metricValue.Value,err=strconv.ParseFloat(v.(string), 64)
+					if metricValue.Value==0 {
+						metricValue.Value=0.0
+					}
+
+					//metricValues = append(metricValues, metricValue)
+					//metrics[i].MetricValues[j].Value, _ = strconv.ParseFloat(v.(string), 64)
 				case float64:
 					secs := int64(v.(float64))
-					metrics[i].MetricValues[j].Timestamp = secs
+					metricValue.Timestamp=secs
+					//metrics[i].MetricValues[j].Timestamp = secs
 				default:
 					log.Info(v, "is of a type I don't know how to handle")
 				}
+
 			}
+			metricValues = append(metricValues, metricValue)
+			metrics[i].MetricValues=metricValues
 		}
 
 		bArr, _ := json.Marshal(metrics)
@@ -136,9 +156,10 @@ func (c *controller) GetLatestMetrics(opt *pb.GetMetricsOpts) (*[]model.MetricSp
 		if err != nil {
 			log.Error(err)
 		}
+		return &metrics, err
 
 	}
-	return &metrics, err
+	return nil,err
 }
 
 func (c *controller) GetInstantMetrics(opt *pb.GetMetricsOpts) (*[]model.MetricSpec, error) {
@@ -161,7 +182,7 @@ func (c *controller) GetInstantMetrics(opt *pb.GetMetricsOpts) (*[]model.MetricS
 
 		// now convert to our repsonse struct, so we can marshal it and send out the JSON
 		for i, res := range fv.Data.Result {
-			metrics[i].InstanceID = res.Metric.Instance + res.Metric.Device
+			metrics[i].InstanceID = res.Metric.InstanceID + res.Metric.Device
 			metrics[i].Name = res.Metric.Name
 			metrics[i].MetricValues = make([]*model.Metric, len(res.Value))
 			for j, v := range res.Value {

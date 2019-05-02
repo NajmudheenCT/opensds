@@ -42,31 +42,31 @@ type lvmCollector struct {
 //constructor for lvm collector that
 //initializes every descriptor and returns a pointer to the collector
 func newLvmCollector() *lvmCollector {
-	var volumeLabel = []string{"volume"}
+	var deviceLabel = []string{"device","source","instanceID"}
 	return &lvmCollector{
 		IOPS: prometheus.NewDesc("OpensSDS_Volume_IOPS_tps",
 			"Shows IOPS",
-			volumeLabel, nil,
+			deviceLabel, nil,
 		),
 		ReadThroughput: prometheus.NewDesc("OpensSDS_Volume_ReadThroughput_KBs",
 			"Shows ReadThroughput",
-			volumeLabel, nil,
+			deviceLabel, nil,
 		),
 		WriteThroughput: prometheus.NewDesc("OpensSDS_Volume_WriteThroughput_KBs",
 			"Shows ReadThroughput",
-			volumeLabel, nil,
+			deviceLabel, nil,
 		),
 		ResponseTime: prometheus.NewDesc("OpensSDS_Volume_ResponseTime_ms",
 			"Shows ReadThroughput",
-			volumeLabel, nil,
+			deviceLabel, nil,
 		),
 		ServiceTime: prometheus.NewDesc("OpensSDS_Volume_ServiceTime_ms",
 			"Shows ServiceTime",
-			volumeLabel, nil,
+			deviceLabel, nil,
 		),
 		Utilization: prometheus.NewDesc("OpensSDS_Volume_Utilization_prcnt",
 			"Shows Utilization in percentage",
-			volumeLabel, nil,
+			deviceLabel, nil,
 		),
 	}
 
@@ -102,22 +102,22 @@ func (c *lvmCollector) Collect(ch chan<- prometheus.Metric) {
 		metricArray, _ := metricDriver.CollectMetrics(metricList, volume)
 		fmt.Println(metricArray)
 		for _, metric := range metricArray {
-			instanceLabel := metric.InstanceID
+			instanceLabel := []string{metric.InstanceID,metric.Source,metric.InstanceID}
 			//unitLabel := "Unit:"+metric.Unit
 			switch metric.Name {
 			case "IOPS":
-				ch <- prometheus.MustNewConstMetric(c.IOPS, prometheus.GaugeValue, metric.MetricValues[0].Value, instanceLabel)
+				ch <- prometheus.MustNewConstMetric(c.IOPS, prometheus.GaugeValue, metric.MetricValues[0].Value, instanceLabel...)
 			case "ReadThroughput":
-				ch <- prometheus.MustNewConstMetric(c.ReadThroughput, prometheus.GaugeValue, metric.MetricValues[0].Value, instanceLabel)
+				ch <- prometheus.MustNewConstMetric(c.ReadThroughput, prometheus.GaugeValue, metric.MetricValues[0].Value, instanceLabel...)
 			case "WriteThroughput":
-				ch <- prometheus.MustNewConstMetric(c.WriteThroughput, prometheus.GaugeValue, metric.MetricValues[0].Value, instanceLabel)
+				ch <- prometheus.MustNewConstMetric(c.WriteThroughput, prometheus.GaugeValue, metric.MetricValues[0].Value, instanceLabel...)
 			case "ResponseTime":
-				ch <- prometheus.MustNewConstMetric(c.ResponseTime, prometheus.GaugeValue, metric.MetricValues[0].Value, instanceLabel)
+				ch <- prometheus.MustNewConstMetric(c.ResponseTime, prometheus.GaugeValue, metric.MetricValues[0].Value, instanceLabel...)
 			case "ServiceTime":
-				ch <- prometheus.MustNewConstMetric(c.ServiceTime, prometheus.GaugeValue, metric.MetricValues[0].Value, instanceLabel)
+				ch <- prometheus.MustNewConstMetric(c.ServiceTime, prometheus.GaugeValue, metric.MetricValues[0].Value, instanceLabel...)
 
 			case "UtilizationPercentage":
-				ch <- prometheus.MustNewConstMetric(c.Utilization, prometheus.GaugeValue, metric.MetricValues[0].Value, instanceLabel)
+				ch <- prometheus.MustNewConstMetric(c.Utilization, prometheus.GaugeValue, metric.MetricValues[0].Value, instanceLabel...)
 
 			}
 		}

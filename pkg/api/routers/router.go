@@ -58,7 +58,7 @@ func init() {
 			// Pool is the virtual description of backend storage, usually divided into block, file and object,
 			// and every pool is atomic, which means every pool contains a specific set of features.
 			// ListPools and GetPool are used for checking the status of backend pool, admin only
-			beego.NSRouter("/:tenantId/pools", &controllers.PoolPortal{}, "get:ListPools"),
+			beego.NSRouter("/:tenantId/metrics", &controllers.MetricsPortal{}, "get:GetMetrics"),
 			beego.NSRouter("/:tenantId/pools/:poolId", &controllers.PoolPortal{}, "get:GetPool"),
 			beego.NSRouter("/:tenantId/availabilityZones", &controllers.PoolPortal{}, "get:ListAvailabilityZones"),
 		)

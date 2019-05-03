@@ -1,0 +1,4 @@
+resources:
+  - type: volume
+    devices:
+      - volume-e138cb0d-375d-4118-aee6-2ce6c12f17a6

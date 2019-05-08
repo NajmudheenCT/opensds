@@ -16,65 +16,15 @@ package lvm
 import (
 	"fmt"
 	"github.com/opensds/opensds/pkg/model"
-	"github.com/opensds/opensds/pkg/utils/config"
 	"github.com/opensds/opensds/pkg/utils/exec"
 	"reflect"
 	"testing"
 )
 
-func TestMetricDriverSetup(t *testing.T) {
-	var d = &MetricDriver{}
-
-	if err := d.Setup(); err != nil {
-		t.Errorf("Setup lvm metric  driver failed: %+v\n", err)
-	}
-
-}
-
-func TestCollectMetrics(t *testing.T) {
-
-	metricList := []string{"IOPS", "ReadThroughput", "WriteThroughput", "ResponseTime", "ServiceTime", "UtilizationPercentage"}
-	var metricDriver = &MetricDriver{}
-	metricDriver.Setup()
-	metricArray, err := metricDriver.CollectMetrics(metricList, "sda")
-	if err != nil {
-		t.Errorf("collectMetrics call to lvm driver failed: %+v\n", err)
-	}
-	for _, m := range metricArray {
-		t.Log(*m)
-	}
-
-}
-type MetricFakeExecuter struct {
-	RespMap map[string]*MetricFakeResp
-}
-
-type MetricFakeResp struct {
-	out string
-	err error
-}
-func (f *MetricFakeExecuter) Run(name string, args ...string) (string, error) {
-	var cmd = name
-	if name == "env" {
-		cmd = args[1]
-	}
-	v, ok := f.RespMap[cmd]
-	if !ok {
-		return "", fmt.Errorf("can find specified op: %s", args[1])
-	}
-	return v.out, v.err
-}
-func NewMetricFakeExecuter(respMap map[string]*MetricFakeResp) exec.Executer {
-	return &MetricFakeExecuter{RespMap: respMap}
-}
-
-func TestCollectMetrics1(t *testing.T) {
-	var fd = &MetricDriver{}
-	config.CONF.OsdsDock.Backends.LVM.ConfigPath = "testdata/lvm.yaml"
-	fd.Setup()
-
-	respMap := map[string]*MetricFakeResp{
-		"sar": { `05:26:43  IST       DEV       tps     rkB/s     wkB/s   areq-sz    aqu-sz     await     svctm     %util
+var metricMap map[string]float64 = map[string]float64{"IOPS": 3.16, "ReadThroughput": 4.17, "WriteThroughput": 134.74, "ResponseTime": 2.67, "ServiceTime": 4.00, "UtilizationPercentage": 1.26}
+var metricToUnitMap map[string]string = map[string]string{"IOPS": "tps", "ReadThroughput": "KB/s", "WriteThroughput": "KB/s", "ResponseTime": "ms", "ServiceTime": "ms", "UtilizationPercentage": "%"}
+var respMap map[string]*MetricFakeResp = map[string]*MetricFakeResp{
+	"sar": {`05:26:43  IST       DEV       tps     rkB/s     wkB/s   areq-sz    aqu-sz     await     svctm     %util
 			05:26:44      loop0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
 			05:26:44      loop1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
 			05:26:44      loop2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
@@ -83,66 +33,115 @@ func TestCollectMetrics1(t *testing.T) {
 			05:26:44      loop5      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
 			05:26:44      loop6      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
 			05:26:44      loop7      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
-			05:26:44        sda      3.16      0.00    134.74     42.67      0.01      2.67      4.00      1.26
+			05:26:44      volume-b902e771-8e02-4099-b601-a6b3881f86fd      3.16      4.17    134.74     42.67      0.01      2.67      4.00      1.26
 			05:26:44      loop8      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
 			05:26:44      loop9      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
 			05:26:44      loop10      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00`, nil},
+}
+var metricsList []string = []string{"IOPS", "ReadThroughput", "WriteThroughput", "ResponseTime", "ServiceTime", "UtilizationPercentage"}
+
+func TestMetricDriverSetup(t *testing.T) {
+	var d = &MetricDriver{}
+
+	if err := d.Setup(); err != nil {
+		t.Errorf("setup lvm metric  driver failed: %+v\n", err)
 	}
-	fd.cli.RootExecuter = NewMetricFakeExecuter(respMap)
-	fd.cli.BaseExecuter = NewMetricFakeExecuter(respMap)
-	metricMap:= map[string]float64{"IOPS":3.16,"ReadThroughput":0.00,"WriteThroughput":134.74, "ResponseTime":2.67, "ServiceTime":4.00, "UtilizationPercentage":1.26}
-	metricToUnitMap:= map[string]string{"IOPS":"tps","ReadThroughput":"KB/s","WriteThroughput":"KB/s", "ResponseTime":"ms", "ServiceTime":"ms", "UtilizationPercentage":"%"}
+
+}
+
+type MetricFakeExecuter struct {
+	RespMap map[string]*MetricFakeResp
+}
+
+type MetricFakeResp struct {
+	out string
+	err error
+}
+
+func (f *MetricFakeExecuter) Run(name string, args ...string) (string, error) {
+	var cmd = name
+	if name == "env" {
+		cmd = args[1]
+	}
+	v, ok := f.RespMap[cmd]
+	if !ok {
+		return "", fmt.Errorf("can't find specified op: %s", args[1])
+	}
+	return v.out, v.err
+}
+func NewMetricFakeExecuter(respMap map[string]*MetricFakeResp) exec.Executer {
+	return &MetricFakeExecuter{RespMap: respMap}
+}
+
+func TestCollectMetrics(t *testing.T) {
+	var md = &MetricDriver{}
+		md.Setup()
+
+	md.cli.RootExecuter = NewMetricFakeExecuter(respMap)
+	md.cli.BaseExecuter = NewMetricFakeExecuter(respMap)
 	var tempMetricArray []*model.MetricSpec
-	metricsList := []string{"IOPS", "ReadThroughput", "WriteThroughput", "ResponseTime", "ServiceTime", "UtilizationPercentage"}
+
 	for _, element := range metricsList {
-		val:= metricMap[element]
-		//Todo: See if association  is required here, resource discovery could fill this information
-		associatorMap := make(map[string]string)
-		associatorMap["device"] = "sda"
-		metricValue := &model.Metric{
+		val := metricMap[element]
+		expctdLabels := make(map[string]string)
+		expctdLabels["device"] = "volume-b902e771-8e02-4099-b601-a6b3881f86fd"
+		expctdmetricValue := &model.Metric{
 			Timestamp: 123456,
 			Value:     val,
 		}
-		metricValues := make([]*model.Metric, 0)
-		metricValues = append(metricValues, metricValue)
+		expctdMetricValues := make([]*model.Metric, 0)
+		expctdMetricValues = append(expctdMetricValues, expctdmetricValue)
 
 		metric := &model.MetricSpec{
-			InstanceID:   "sda",
-			InstanceName: "sda",
+			InstanceID:   "volume-b902e771-8e02-4099-b601-a6b3881f86fd",
+			InstanceName: "volume-b902e771-8e02-4099-b601-a6b3881f86fd",
 			Job:          "OpenSDS",
-			Labels:       associatorMap,
-			//Todo Take Componet from Post call, as of now it is only for volume
+			Labels:       expctdLabels,
 			Component: "Volume",
 			Name:      element,
-			//Todo : Fill units according to metric type
 			Unit: metricToUnitMap[element],
-			//Todo : Get this information dynamically ( hard coded now , as all are direct values
 			AggrType:     "",
-			MetricValues: metricValues,
+			MetricValues: expctdMetricValues,
 		}
 		tempMetricArray = append(tempMetricArray, metric)
 	}
-	expectedMetrics:=tempMetricArray
-	retunMetrics, err := fd.CollectMetrics(metricsList,"sda")
+	expectedMetrics := tempMetricArray
+	retunMetrics, err := md.CollectMetrics(metricsList, "volume-b902e771-8e02-4099-b601-a6b3881f86fd")
 	if err != nil {
-		t.Error("Failed to create volume:", err)
+		t.Error("failed to create volume:", err)
 	}
+	// cant use deep equal on metric spec objects as the timesatmp calulation is getCurrentUnixTimestamp() in driver
+	// validate equivalence of each metricspec fields except timestamp
+	var b bool = true
+	for i, m := range expectedMetrics {
 
-	if !reflect.DeepEqual(retunMetrics, expectedMetrics) {
-		t.Errorf("Expected %+v, got %+v\n", expectedMetrics, retunMetrics)
+		b = b && reflect.DeepEqual(m.InstanceName, retunMetrics[i].InstanceName)
+		b = b && reflect.DeepEqual(m.InstanceID, retunMetrics[i].InstanceID)
+		b = b && reflect.DeepEqual(m.Job, retunMetrics[i].Job)
+		b = b && reflect.DeepEqual(m.Labels, retunMetrics[i].Labels)
+		b = b && reflect.DeepEqual(m.Component, retunMetrics[i].Component)
+		b = b && reflect.DeepEqual(m.Unit, retunMetrics[i].Unit)
+		b = b && reflect.DeepEqual(m.AggrType, retunMetrics[i].AggrType)
+		for j, v := range m.MetricValues {
+
+			b = b && reflect.DeepEqual(v.Value, retunMetrics[i].MetricValues[j].Value)
+		}
+
+	}
+	if !b {
+		t.Errorf("expected metric spec")
 		printMetricSpec(expectedMetrics)
-		fmt.Println("returned metrics")
+		t.Errorf("returned metric spec")
 		printMetricSpec(retunMetrics)
 	}
 }
 
-func printMetricSpec(m []*model.MetricSpec){
-	for _,p := range m{
-		fmt.Printf("%+v\n", p)
-		for _,v := range p.MetricValues{
-			fmt.Printf("%+v\n", v)
+func printMetricSpec(m []*model.MetricSpec) {
+	for _, p := range m {
+		fmt.Errorf("%+v\n", p)
+		for _, v := range p.MetricValues {
+			fmt.Errorf("%+v\n", v)
 		}
 	}
-
 
 }

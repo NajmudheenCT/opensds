@@ -142,3 +142,48 @@ func (cli *MetricCli) CollectMetrics(metricList []string, instanceID string) ( /
 	}
 	return returnMap, labelMap, err
 }
+
+func (c *MetricCli) DiscoverVolumes() ([]string, error) {
+	cmd := []string{"env", "LC_ALL=C", "lvs"}
+	out, err := c.execute(cmd...)
+	tableRows := strings.Split(string(out), "\n")
+	var volumes []string
+	for _, row := range tableRows[1:] {
+		if row != "" {
+			tokens := regexp.MustCompile(" ")
+			cols := tokens.Split(row, -1)
+			var columns= make([]string, 0, 0)
+			for _, v := range cols {
+				if v != "" {
+					columns = append(columns, v)
+				}
+			}
+			volumes = append(volumes, columns[0])
+
+		}
+	}
+	//fmt.Println(out,err)
+	return volumes, err
+}
+func (c *MetricCli) DiscoverDisks() ([]string, error) {
+	cmd := []string{"env", "LC_ALL=C", "pvs"}
+	out, err := c.execute(cmd...)
+	tableRows := strings.Split(string(out), "\n")
+	var volumes []string
+	for _, row := range tableRows[1:] {
+		if row != "" {
+			tokens := regexp.MustCompile(" ")
+			cols := tokens.Split(row, -1)
+			var columns= make([]string, 0, 0)
+			for _, v := range cols {
+				if v != "" {
+					columns = append(columns, v)
+				}
+			}
+			volumes = append(volumes, columns[0])
+
+		}
+	}
+	//fmt.Println(out,err)
+	return volumes, err
+}

@@ -14,6 +14,7 @@
 package lvm
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
@@ -156,6 +157,10 @@ func (d *MetricDriver) CollectMetrics(metricsList []string, instanceID string) (
 	if supportedMetrics == nil {
 		log.Infof("no metrics found in the  supported metric list")
 	}
+	volumeList, err := d.cli.DiscoverVolumes()
+	fmt.Print(volumeList)
+	DiskList, err := d.cli.DiscoverDisks()
+	fmt.Print(DiskList)
 	metricMap, labelMap, err := d.cli.CollectMetrics(supportedMetrics, instanceID)
 
 	var tempMetricArray []*model.MetricSpec

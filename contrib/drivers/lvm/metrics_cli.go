@@ -138,6 +138,7 @@ func (cli *MetricCli) CollectMetrics(metricList []string, instanceID string) ( /
 		metricMap["read_throughput"] = 2
 		metricMap["write_throughput"] = 3
 		cli.parseCommandOutput(metricList, returnMap, labelMap, instanceID, metricMap, out)
+<<<<<<< HEAD
 
 	}
 	return returnMap, labelMap, err
@@ -181,9 +182,15 @@ func (c *MetricCli) DiscoverDisks() ([]string, error) {
 				}
 			}
 			volumes = append(volumes, columns[0])
+=======
+>>>>>>> 4c9bbbf48f0c2cb1828e591f11e990ac9eb0b5ff
 
 		}
 	}
+<<<<<<< HEAD
 	//fmt.Println(out,err)
 	return volumes, err
+=======
+	return returnMap, labelMap, err
+>>>>>>> 4c9bbbf48f0c2cb1828e591f11e990ac9eb0b5ff
 }

@@ -157,10 +157,13 @@ func (d *MetricDriver) CollectMetrics(metricsList []string, instanceID string) (
 	if supportedMetrics == nil {
 		log.Infof("no metrics found in the  supported metric list")
 	}
+<<<<<<< HEAD
 	volumeList, err := d.cli.DiscoverVolumes()
 	fmt.Print(volumeList)
 	DiskList, err := d.cli.DiscoverDisks()
 	fmt.Print(DiskList)
+=======
+>>>>>>> 4c9bbbf48f0c2cb1828e591f11e990ac9eb0b5ff
 	metricMap, labelMap, err := d.cli.CollectMetrics(supportedMetrics, instanceID)
 
 	var tempMetricArray []*model.MetricSpec
